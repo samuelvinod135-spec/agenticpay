@@ -7,6 +7,7 @@ import walletsRouter from './routes/wallets';
 import policiesRouter from './routes/policies';
 import transactionsRouter from './routes/transactions';
 import paymentRoutes from './routes/paymentRoutes';
+import webhookRoutes from './routes/webhookRoutes';
 import { requireAuth } from './middleware/auth';
 
 dotenv.config();
@@ -31,6 +32,9 @@ app.use('/api/health', healthRouter);
 
 // Circle USDC Payments route
 app.use('/api/v1/payments', paymentRoutes);
+
+// Circle W3S Webhooks route
+app.use('/api/v1/webhooks', webhookRoutes);
 
 // Protected routes (Supabase Auth Bearer token verification)
 app.use('/api/agents', requireAuth, agentsRouter);

@@ -31,15 +31,20 @@ An end-to-end infrastructure system enabling autonomous AI agents (Eliza, LangCh
 │   │   │   ├── agents.ts            # GET/POST /api/agents (Zod validation)
 │   │   │   ├── wallets.ts           # GET /api/wallets & /api/wallets/:agentId
 │   │   │   ├── policies.ts          # GET/PUT /api/policies/:agentId
-│   │   │   └── transactions.ts      # GET & POST /api/transactions/simulate
+│   │   │   ├── transactions.ts      # GET & POST /api/transactions/simulate
+│   │   │   ├── paymentRoutes.ts     # POST /api/v1/payments/transfer (USDC transfers)
+│   │   │   └── webhookRoutes.ts     # POST /api/v1/webhooks/circle (Circle W3S notifications)
 │   │   ├── services/
 │   │   │   ├── store.ts             # Store abstraction (Supabase + fallback)
+│   │   │   ├── transfer.ts          # Base Sepolia USDC transfer execution
 │   │   │   └── walletService.ts     # Circle Developer-Controlled Wallets SDK service
 │   │   └── index.ts                 # Express entrypoint & CORS configuration
 │   ├── scripts/
-│   │   └── create-wallet.ts         # Standalone CLI script to provision Base Sepolia wallets
+│   │   ├── create-wallet.ts         # Standalone CLI script to provision Base Sepolia wallets
+│   │   └── migrate-transactions.ts  # CLI helper displaying transactions migration SQL
 │   ├── supabase/
-│   │   └── schema.sql               # Idempotent database schema with RLS & trigger
+│   │   ├── migrations/              # SQL migrations directory
+│   │   └── schema.sql               # Complete database schema with RLS & trigger
 │   ├── .env.example
 │   ├── package.json
 │   └── tsconfig.json
@@ -134,3 +139,22 @@ The built-in micropayment simulator allows testing safety boundaries directly fr
 1. **Permitted Payments**: If `amount_usd <= max_per_tx_usd` and total rolling 24h spend `< daily_limit_usd`, the transaction is approved and broadcast to Base Sepolia with a transaction hash.
 2. **Per-Tx Violation**: If an agent requests more than its single transaction limit, the policy firewall halts execution immediately with an explicit rejection reason.
 3. **Daily Quota Exhaustion**: If the cumulative 24h spend exceeds the daily limit, payment attempts are rejected and logged to the ledger.
+
+---
+
+## 💸 Circle USDC Transfers & Webhook Notifications
+
+### 1. Initiate USDC Transfer
+```bash
+curl -X POST http://localhost:4000/api/v1/payments/transfer \
+  -H "Content-Type: application/json" \
+  -d '{
+    "walletId": "<walletId>",
+    "destinationAddress": "0x139166e733f0bb1e8e53f9c7115df9c9c7c162a4",
+    "amount": 2.50
+  }'
+```
+
+### 2. Circle W3S Webhook Listener (`/api/v1/webhooks/circle`)
+Configured to receive transaction state changes (`COMPLETE`, `FAILED`, `PENDING`) and automatically update the corresponding record in the Supabase `transactions` table.
+
