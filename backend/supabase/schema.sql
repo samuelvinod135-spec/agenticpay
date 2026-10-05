@@ -43,11 +43,18 @@ create table if not exists public.policies (
 -- 5. TRANSACTIONS TABLE
 create table if not exists public.transactions (
   id uuid primary key default gen_random_uuid(),
-  agent_id uuid not null references public.agents(id) on delete cascade,
-  amount_usd numeric(12, 4) not null,
+  transaction_id text unique,
+  wallet_id text not null,
+  destination_address text not null,
+  amount numeric not null,
+  token_address text not null,
+  blockchain text not null default 'base-sepolia',
+  status text not null default 'INITIATED' check (status in ('INITIATED', 'PENDING', 'COMPLETE', 'FAILED')),
+  agent_id uuid references public.agents(id) on delete cascade,
+  amount_usd numeric(12, 4),
   tx_hash text,
-  status text not null check (status in ('pending', 'confirmed', 'failed')),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
 -- Enable RLS

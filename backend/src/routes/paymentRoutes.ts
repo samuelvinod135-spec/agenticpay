@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { executeUsdcTransfer } from '../services/transfer';
+import { supabase } from '../lib/supabase.js';
 
 const router = Router();
 
 /**
  * POST /api/v1/payments/transfer
- * Transfers USDC on Base Sepolia from a developer-controlled wallet.
+ * Transfers USDC on Base Sepolia from a developer-controlled wallet
+ * and logs the transaction record to Supabase.
  */
 router.post('/transfer', async (req: Request, res: Response): Promise<void> => {
   try {
@@ -55,10 +57,40 @@ router.post('/transfer', async (req: Request, res: Response): Promise<void> => {
       tokenId,
     });
 
+    // Log the transaction in Supabase
+    let dbRecordId: string | null = null;
+    try {
+      const { data: dbData, error: dbError } = await supabase
+        .from('transactions')
+        .insert({
+          transaction_id: transferResult.transactionId,
+          wallet_id: transferResult.walletId,
+          destination_address: transferResult.destinationAddress,
+          amount: parseFloat(transferResult.amount),
+          token_address: transferResult.tokenAddress,
+          blockchain: transferResult.blockchain || 'base-sepolia',
+          status: transferResult.state || 'INITIATED',
+        })
+        .select('id')
+        .single();
+
+      if (dbError) {
+        console.warn('[paymentRoutes] Supabase transaction logging notice:', dbError.message);
+      } else if (dbData) {
+        dbRecordId = dbData.id;
+      }
+    } catch (insertError: any) {
+      console.warn('[paymentRoutes] Failed to record transaction in Supabase:', insertError.message);
+    }
+
     res.status(200).json({
       success: true,
       message: 'USDC transfer successfully initiated on Base Sepolia.',
-      transaction: transferResult,
+      recordId: dbRecordId,
+      transaction: {
+        ...transferResult,
+        dbRecordId,
+      },
     });
   } catch (error: any) {
     console.error('[paymentRoutes] Error processing transfer:', error);
