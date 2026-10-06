@@ -47,9 +47,10 @@ export async function updateSession(request: NextRequest) {
     const isGuest =
       request.cookies.get('agentic_guest_auth')?.value === 'true' ||
       request.cookies.get('agentic_operator_auth')?.value === 'true' ||
-      request.nextUrl.searchParams.get('guest') === 'true';
+      request.nextUrl.searchParams.get('guest') === 'true' ||
+      process.env.NODE_ENV === 'development';
 
-    if (request.nextUrl.searchParams.get('guest') === 'true') {
+    if (request.nextUrl.searchParams.get('guest') === 'true' || process.env.NODE_ENV === 'development') {
       response.cookies.set({
         name: 'agentic_guest_auth',
         value: 'true',
