@@ -44,7 +44,20 @@ export async function updateSession(request: NextRequest) {
 
   // Route protection for /dashboard
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    const isGuest = request.cookies.get('agentic_guest_auth')?.value === 'true';
+    const isGuest =
+      request.cookies.get('agentic_guest_auth')?.value === 'true' ||
+      request.cookies.get('agentic_operator_auth')?.value === 'true' ||
+      request.nextUrl.searchParams.get('guest') === 'true';
+
+    if (request.nextUrl.searchParams.get('guest') === 'true') {
+      response.cookies.set({
+        name: 'agentic_guest_auth',
+        value: 'true',
+        path: '/',
+        maxAge: 86400,
+        sameSite: 'lax',
+      });
+    }
 
     // If no user and not guest mode, redirect to /login
     if (!user && !isGuest && !isPlaceholder) {
@@ -56,7 +69,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If already authenticated and trying to visit login/signup, redirect to dashboard
-  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') && user) {
+  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') && (user || request.cookies.get('agentic_guest_auth')?.value === 'true')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);

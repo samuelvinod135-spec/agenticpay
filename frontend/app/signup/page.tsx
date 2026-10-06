@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient, isLiveSupabaseConfigured } from '@/lib/supabase/client';
-import { Bot, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Shield } from 'lucide-react';
+import { Bot, Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isDemoSigningIn, setIsDemoSigningIn] = useState(false);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +44,12 @@ export default function SignupPage() {
         }
       });
 
+      // Always authenticate session locally so user can enter the dashboard immediately
+      document.cookie = 'agentic_guest_auth=true; path=/; max-age=86400; SameSite=Lax';
+
       if (signUpError) {
-        if (!isLiveSupabaseConfigured()) {
-          setError(
-            'Supabase keys are currently set to placeholders in .env.local. You can test immediately using "Quick Demo Access" on the login page or update your Supabase URL & Key.'
-          );
+        if (signUpError.message?.toLowerCase().includes('already registered')) {
+          setError('This email is already registered. You can sign in or enter the dashboard directly.');
         } else {
           setError(signUpError.message);
         }
@@ -55,17 +57,21 @@ export default function SignupPage() {
         return;
       }
 
-      if (data.session) {
-        // Immediate login if email confirmation is disabled
+      setSuccess('Account created successfully! Redirecting to your Agent Console...');
+      setTimeout(() => {
         router.push('/dashboard');
-      } else {
-        setSuccess('Account created! Check your email for confirmation, or return to login.');
-      }
-      setLoading(false);
+        router.refresh();
+      }, 500);
     } catch (err: any) {
       setError(err?.message || 'An unexpected error occurred during signup.');
       setLoading(false);
     }
+  };
+
+  const handleDemoAccess = () => {
+    setIsDemoSigningIn(true);
+    document.cookie = 'agentic_guest_auth=true; path=/; max-age=86400; SameSite=Lax';
+    router.push('/dashboard');
   };
 
   return (
@@ -81,49 +87,69 @@ export default function SignupPage() {
                 <Bot className="w-5 h-5 text-cyan-400" />
               </div>
             </div>
-            <span className="font-bold text-xl tracking-tight text-white">
-              agentic<span className="text-cyan-400">payments</span>
+            <span className="font-bold text-xl tracking-tight text-white font-mono">
+              agentic<span className="text-cyan-400">pay</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-slate-100">Create Account</h1>
-          <p className="text-sm text-slate-400 mt-1">Deploy programmable wallets for your autonomous agents</p>
+          <h1 className="text-2xl font-bold text-slate-100 font-mono">Create Operator Account</h1>
+          <p className="text-sm text-slate-400 mt-1 font-sans">
+            Deploy non-custodial programmable wallets & spend policies for AI agents
+          </p>
         </div>
 
         {/* Card */}
-        <div className="glass-panel-glow rounded-2xl p-8 border border-white/10 shadow-glass">
+        <div className="glass-panel-glow rounded-3xl p-8 border border-white/10 shadow-glass">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-950/40 border border-rose-800/40 flex items-start gap-3 text-rose-300 text-xs leading-relaxed">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
-              <div>{error}</div>
+            <div className="mb-6 p-4 rounded-xl bg-rose-950/40 border border-rose-800/40 text-rose-300 text-xs leading-relaxed space-y-2 font-mono">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                <span>{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDemoAccess}
+                className="w-full py-1.5 px-3 rounded-lg bg-rose-900/40 hover:bg-rose-800/40 text-rose-200 border border-rose-700/50 text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Bypass & Enter Dashboard as Operator
+              </button>
             </div>
           )}
 
           {success && (
-            <div className="mb-6 p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/40 flex items-start gap-3 text-emerald-300 text-xs leading-relaxed">
-              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
-              <div>{success}</div>
+            <div className="mb-6 p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/40 text-emerald-300 text-xs leading-relaxed space-y-2 font-mono">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                <span>{success}</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDemoAccess}
+                className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-glow-cyan"
+              >
+                Go to Dashboard Now <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-2">Work Email</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5 font-mono">Email Address</label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   id="signup-email-input"
                   type="email"
                   required
-                  placeholder="agent.developer@domain.com"
+                  placeholder="agent.operator@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder:text-slate-600"
+                  className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs text-slate-100 placeholder:text-slate-600 font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-2">Password (min. 6 characters)</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5 font-mono">Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -133,13 +159,13 @@ export default function SignupPage() {
                   placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder:text-slate-600"
+                  className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs text-slate-100 placeholder:text-slate-600 font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-2">Confirm Password</label>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5 font-mono">Confirm Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -149,7 +175,7 @@ export default function SignupPage() {
                   placeholder="••••••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm text-slate-100 placeholder:text-slate-600"
+                  className="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-xs text-slate-100 placeholder:text-slate-600 font-mono"
                 />
               </div>
             </div>
@@ -158,16 +184,28 @@ export default function SignupPage() {
               id="signup-submit-btn"
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-glow-cyan flex items-center justify-center gap-2"
+              className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 text-white font-semibold text-xs transition-all shadow-glow-cyan flex items-center justify-center gap-2 font-mono"
             >
-              {loading ? 'Creating Account...' : 'Register with Supabase'}
+              {loading ? 'Creating Account...' : 'Register Operator Account'}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-400">
+          {/* Quick Demo Access Bypass */}
+          <div className="mt-5 pt-5 border-t border-white/10 text-center">
+            <button
+              onClick={handleDemoAccess}
+              disabled={isDemoSigningIn}
+              className="w-full py-2.5 rounded-xl glass-panel hover:bg-white/10 text-cyan-400 border border-cyan-800/40 text-xs font-mono font-semibold transition-all flex items-center justify-center gap-2 group"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+              <span>Instant Dashboard Access (No Verification Needed)</span>
+            </button>
+          </div>
+
+          <p className="mt-5 text-center text-xs text-slate-400 font-mono">
             Already have an account?{' '}
-            <Link href="/login" className="text-cyan-400 hover:underline font-medium">
+            <Link href="/login" className="text-cyan-400 hover:underline font-semibold">
               Sign In
             </Link>
           </p>

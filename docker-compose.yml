@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agenticpay-backend
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://agentic:agentic_secret@postgres:5432/agenticpay
+      - REDIS_URL=redis://redis:6379
+      - CIRCLE_API_KEY=${CIRCLE_API_KEY:-TEST_API_KEY}
+      - CIRCLE_ENTITY_SECRET=${CIRCLE_ENTITY_SECRET:-TEST_ENTITY_SECRET}
+      - CIRCLE_WALLET_SET_ID=${CIRCLE_WALLET_SET_ID:-TEST_WALLET_SET_ID}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - agenticpay-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: agenticpay-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=agentic
+      - POSTGRES_PASSWORD=agentic_secret
+      - POSTGRES_DB=agenticpay
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentic -d agenticpay"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agenticpay-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: agenticpay-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agenticpay-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  agenticpay-network:
+    driver: bridge

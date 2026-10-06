@@ -8,6 +8,7 @@ import policiesRouter from './routes/policies';
 import transactionsRouter from './routes/transactions';
 import paymentRoutes from './routes/paymentRoutes';
 import webhookRoutes from './routes/webhookRoutes';
+import metricsRouter from './routes/metrics';
 import { requireAuth } from './middleware/auth';
 
 dotenv.config();
@@ -24,14 +25,26 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.use(express.json());
+// Parse JSON with rawBody buffer capture for webhook signature verification
+app.use(express.json({
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
+
+// Parse text/plain bodies (common for AWS SNS notifications used by Circle)
+app.use(express.text({ type: ['text/plain', 'application/json'] }));
 
 // Public health check route
 app.use('/health', healthRouter);
 app.use('/api/health', healthRouter);
 
-// Circle USDC Payments route
+// Prometheus Observability metrics route
+app.use('/metrics', metricsRouter);
+
+// Circle USDC Payments route & Agent Transaction APIs
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1', paymentRoutes);
 
 // Circle W3S Webhooks route
 app.use('/api/v1/webhooks', webhookRoutes);

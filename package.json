@@ -11,7 +11,22 @@
     "build": "npm run build:backend && npm run build:frontend",
     "start:backend": "npm run start --prefix backend",
     "start:frontend": "npm run start --prefix frontend",
-    "create-wallet": "npm run create-wallet --prefix backend"
+    "create-wallet": "npm run create-wallet --prefix backend",
+    "deploy-agent": "npm run deploy-agent --prefix backend",
+    "demo": "npm run demo --prefix backend",
+    "test:day5": "npm run test:day5 --prefix backend",
+    "test:day6": "npm run test:day6 --prefix backend",
+    "test:day8": "npm run test:day8 --prefix backend",
+    "test:day9": "npm run test:day9 --prefix backend",
+    "test:day10": "npm run test:day10 --prefix backend",
+    "test:day11": "npm run test:day11 --prefix backend",
+    "test:day12": "npm run test:day12 --prefix backend",
+    "test:day13": "npm run test:day13 --prefix backend",
+    "test:day14": "npm run test:day14 --prefix backend",
+    "test:day15": "npm run test:day15 --prefix backend",
+    "test:day16": "npm run test:day16 --prefix backend",
+    "test:day18": "npm run test:day18 --prefix backend",
+    "test:master": "npm run test:master --prefix backend"
   },
   "keywords": [
     "agentic-payments",
