@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+*/node_modules/
+*/*/node_modules/
 .pnp
 .pnp.js
 
@@ -12,11 +14,33 @@ node_modules/
 *.env
 *.dat
 
-# Production build outputs
+# Production build outputs & caches
 dist/
+*/dist/
+*/*/dist/
 build/
+*/build/
 .next/
 out/
+.turbo/
+.cache/
+*.tsbuildinfo
+
+# Python cache & build artifacts
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*/*/*/__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*/egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+ENV/
 
 # Logs
 npm-debug.log*
@@ -27,6 +51,8 @@ pnpm-debug.log*
 
 # OS metadata
 .DS_Store
+*/.DS_Store
+*/*/.DS_Store
 *.pem
 Thumbs.db
 

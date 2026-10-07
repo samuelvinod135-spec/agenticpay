@@ -1,0 +1,802 @@
+openapi: 3.1.0
+info:
+  title: AgenticPay API
+  summary: The Enterprise Financial Firewall & Programmable Rails for Autonomous AI Agents
+  description: |
+    AgenticPay is an institutional, non-custodial financial infrastructure platform that enables
+    autonomous AI agents (Eliza, LangChain, AutoGPT, CrewAI) to execute policy-governed micro-transfers
+    and spend on Base Sepolia, Base Mainnet, Arbitrum, Solana, and Virtual Credit Cards (VCC) with sub-cent
+    settlement, cryptographic verification, ML fraud firewalls, and double-entry ledgering.
+  version: 1.0.0
+  contact:
+    name: AgenticPay Engineering Team
+    email: dev@agenticpay.ai
+    url: https://agenticpay.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:4000
+    description: Local Development & Testing Gateway
+  - url: https://api.agenticpay.ai
+    description: Production Enterprise Gateway
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: System Health & Readiness Probe
+      operationId: getHealth
+      tags:
+        - Observability
+      security: []
+      responses:
+        '200':
+          description: Service is healthy and operational
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /metrics:
+    get:
+      summary: Prometheus Metric Exposition
+      operationId: getMetrics
+      tags:
+        - Observability
+      security: []
+      responses:
+        '200':
+          description: Prometheus metrics in standard exposition format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/v1/payments/transfer:
+    post:
+      summary: Execute Policy-Governed USDC Transfer
+      description: |
+        Initiates a programmatic micro-transfer from an agent-linked Circle Web3 wallet.
+        Evaluates rate limits, edge validation, policy caps, ML anomaly risk, and umbrella
+        hierarchies before on-chain execution.
+      operationId: createTransfer
+      tags:
+        - Payments & Transfers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransferRequest'
+      responses:
+        '200':
+          description: Transfer successfully approved, signed via KMS, and initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '400':
+          description: Policy firewall block or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Edge validation failure (invalid address, excess decimal precision)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded (burst or key rate limit triggered)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Global circuit breaker tripped (SYSTEM_QUARANTINE active)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/transactions:
+    get:
+      summary: Query Historical Transaction Ledger
+      operationId: listTransactions
+      tags:
+        - Payments & Transfers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: agentId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of recorded transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  transactions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TransactionItem'
+
+  /api/v1/agents/{id}/policy:
+    get:
+      summary: Query Agent Spending Policy & Remaining Budget
+      operationId: getAgentPolicy
+      tags:
+        - Policy Firewall
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Active spending caps, rolling 24h spend, and remaining budget
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyResponse'
+    put:
+      summary: Update Agent Spending Policy
+      operationId: updateAgentPolicy
+      tags:
+        - Policy Firewall
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePolicyRequest'
+      responses:
+        '200':
+          description: Updated agent policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyResponse'
+
+  /api/v1/cards/issue:
+    post:
+      summary: Issue Ephemeral Virtual Credit Card (VCC)
+      description: Issues dynamic virtual card with spending cap and optional MCC whitelist for Web2 APIs.
+      operationId: issueVirtualCard
+      tags:
+        - Virtual Credit Cards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCardRequest'
+      responses:
+        '201':
+          description: Virtual card issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+
+  /api/v1/cards/{id}:
+    get:
+      summary: Get Virtual Card Details & Balance
+      operationId: getVirtualCard
+      tags:
+        - Virtual Credit Cards
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Card status and balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+
+  /api/v1/cards/{id}/authorize:
+    post:
+      summary: Simulate Merchant Authorization Swipe
+      operationId: authorizeCardTransaction
+      tags:
+        - Virtual Credit Cards
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amountUsd
+              properties:
+                amountUsd:
+                  type: number
+                mcc:
+                  type: string
+                  example: "5734"
+      responses:
+        '200':
+          description: Authorization approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/v1/ledger:
+    get:
+      summary: Verify Double-Entry Zero-Drift Financial Ledger
+      operationId: getLedgerSanity
+      tags:
+        - Financial Ledger
+      responses:
+        '200':
+          description: Complete double-entry balance check and drift verification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerSanityResponse'
+
+  /api/v1/ledger/logs:
+    get:
+      summary: Retrieve Journal Entries Filtered by Agent
+      operationId: getLedgerLogs
+      tags:
+        - Financial Ledger
+      parameters:
+        - name: agentId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Array of balanced DEBIT and CREDIT journal entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JournalEntry'
+
+  /api/v1/compliance/export:
+    get:
+      summary: Export SOC2 Type II & PCI-DSS Audit Trail Package
+      operationId: exportComplianceReport
+      tags:
+        - Enterprise Compliance & Audit
+      parameters:
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+        - name: agentId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Tamper-evident report containing SHA-256 prompt hashes and correlated ledger IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceExportResponse'
+            text/csv:
+              schema:
+                type: string
+
+  /api/v1/audit-logs:
+    get:
+      summary: List Policy Violation Audit Logs
+      operationId: getAuditLogs
+      tags:
+        - Enterprise Compliance & Audit
+      parameters:
+        - name: agentId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Policy violations and firewall blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  count:
+                    type: integer
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLogItem'
+
+  /api/v1/circuit-breaker/status:
+    get:
+      summary: Query Global Circuit Breaker Health & Rolling Anomaly Rates
+      operationId: getCircuitBreakerStatus
+      tags:
+        - Circuit Breakers & Quarantine
+      security: []
+      responses:
+        '200':
+          description: Real-time circuit breaker status and 60-second window metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CircuitBreakerStatus'
+
+  /api/v1/circuit-breaker/reset:
+    post:
+      summary: Admin Manual Reset of Tripped Circuit Breaker
+      operationId: resetCircuitBreaker
+      tags:
+        - Circuit Breakers & Quarantine
+      responses:
+        '200':
+          description: Circuit breaker restored to HEALTHY
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/v1/tenant/freeze:
+    post:
+      summary: Emergency Panic Switch - Quarantine Tenant
+      operationId: freezeTenant
+      tags:
+        - Circuit Breakers & Quarantine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tenantOrgId
+              properties:
+                tenantOrgId:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Tenant quarantined and agent transfers halted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  quarantined:
+                    type: boolean
+                  tenantOrgId:
+                    type: string
+                  message:
+                    type: string
+
+  /api/v1/tenant/unfreeze:
+    post:
+      summary: Restore Tenant Agent Execution Post-Incident
+      operationId: unfreezeTenant
+      tags:
+        - Circuit Breakers & Quarantine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tenantOrgId
+              properties:
+                tenantOrgId:
+                  type: string
+      responses:
+        '200':
+          description: Tenant un-frozen and agent execution restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  quarantined:
+                    type: boolean
+                  tenantOrgId:
+                    type: string
+                  message:
+                    type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase User Token or Agent Bearer Token
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: ag_live_...
+      description: Institutional Multi-Tenant API Key (starts with ag_live_)
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "ok"
+        timestamp:
+          type: string
+          example: "2026-10-08T00:00:00.000Z"
+        uptime:
+          type: number
+          example: 124.5
+
+    CreateTransferRequest:
+      type: object
+      required:
+        - amount
+      properties:
+        agentId:
+          type: string
+          example: "AutoPay-Agent-01"
+        walletId:
+          type: string
+          example: "f94177bd-764a-5951-b5fa-0b2968f7a682"
+        recipient:
+          type: string
+          example: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        destinationAddress:
+          type: string
+          example: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+        amount:
+          type: number
+          example: 1.50
+        chain:
+          type: string
+          example: "base-sepolia"
+        reason:
+          type: string
+          example: "Autonomous API embedding purchase"
+
+    TransferResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "USDC transfer successfully initiated on Base Sepolia."
+        recordId:
+          type: string
+        kmsSignature:
+          type: object
+          properties:
+            keyId:
+              type: string
+            version:
+              type: integer
+            algorithm:
+              type: string
+        transaction:
+          type: object
+          properties:
+            transactionId:
+              type: string
+            walletId:
+              type: string
+            destinationAddress:
+              type: string
+            amount:
+              type: string
+            txHash:
+              type: string
+            state:
+              type: string
+              example: "INITIATED"
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Policy Violation"
+        message:
+          type: string
+          example: "Proposed transfer of $50.00 USDC exceeds single transaction cap of $10.00 USDC"
+
+    PolicyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        policy:
+          $ref: '#/components/schemas/AgentPolicy'
+
+    AgentPolicy:
+      type: object
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        single_tx_cap_usdc:
+          type: number
+          example: 10.0
+        daily_spend_cap_usdc:
+          type: number
+          example: 50.0
+        whitelisted_addresses:
+          type: array
+          items:
+            type: string
+        current_daily_spend_usdc:
+          type: number
+          example: 3.5
+        remaining_daily_budget_usdc:
+          type: number
+          example: 46.5
+        active:
+          type: boolean
+          example: true
+
+    UpdatePolicyRequest:
+      type: object
+      properties:
+        single_tx_cap_usdc:
+          type: number
+        daily_spend_cap_usdc:
+          type: number
+        whitelisted_addresses:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+
+    IssueCardRequest:
+      type: object
+      required:
+        - agentId
+        - spendingLimitUsd
+      properties:
+        agentId:
+          type: string
+          example: "AutoPay-Agent-01"
+        spendingLimitUsd:
+          type: number
+          example: 50.0
+        memo:
+          type: string
+          example: "Card for Cloud Hosting"
+        allowedMcc:
+          type: array
+          items:
+            type: string
+          example: ["5734", "7372"]
+        ttlMinutes:
+          type: integer
+          example: 1440
+
+    CardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        card:
+          type: object
+          properties:
+            id:
+              type: string
+            agent_id:
+              type: string
+            last4:
+              type: string
+              example: "4242"
+            spending_limit_usd:
+              type: number
+            current_spend_usd:
+              type: number
+            status:
+              type: string
+              example: "ACTIVE"
+
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        referenceId:
+          type: string
+        memo:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              accountCode:
+                type: string
+              entryType:
+                type: string
+                enum: [DEBIT, CREDIT]
+              amount:
+                type: number
+              currency:
+                type: string
+        createdAt:
+          type: string
+
+    LedgerSanityResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        sanity:
+          type: object
+          properties:
+            balanced:
+              type: boolean
+              example: true
+            totalDebits:
+              type: number
+            totalCredits:
+              type: number
+            drift:
+              type: number
+              example: 0.0
+            entriesCount:
+              type: integer
+        count:
+          type: integer
+
+    ComplianceExportResponse:
+      type: object
+      properties:
+        standard:
+          type: string
+          example: "SOC2_TYPE_II_AND_PCI_DSS"
+        exportedAt:
+          type: string
+        recordCount:
+          type: integer
+        integrityCheck:
+          type: string
+          example: "SHA256_HASH_CORRELATED"
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              prompt_hash:
+                type: string
+              signature_verdict:
+                type: string
+              ledger_entry_id:
+                type: string
+
+    CircuitBreakerStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [HEALTHY, SYSTEM_QUARANTINE]
+        quarantined:
+          type: boolean
+        metrics:
+          type: object
+          properties:
+            totalTransfersInWindow:
+              type: integer
+            failedOrFlaggedTransfers:
+              type: integer
+            failureRatePercent:
+              type: number
+            windowSeconds:
+              type: integer
+              example: 60
+        frozenTenants:
+          type: array
+          items:
+            type: string
+
+    TransactionItem:
+      type: object
+      properties:
+        id:
+          type: string
+        transaction_id:
+          type: string
+        amount:
+          type: number
+        destination_address:
+          type: string
+        status:
+          type: string
+
+    AuditLogItem:
+      type: object
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        amount:
+          type: number
+        reason:
+          type: string
+        created_at:
+          type: string

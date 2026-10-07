@@ -23,6 +23,10 @@
     "test:day16": "tsx scripts/testDay16.ts",
     "test:day18": "tsx scripts/testDay18.ts",
     "test:master": "tsx scripts/testMasterE2E.ts",
+    "test:load": "tsx scripts/testLoadStress.ts",
+    "test:path1": "tsx scripts/testLoadStress.ts",
+    "test:path2": "tsx scripts/testPath2Security.ts",
+    "test:path3": "tsx scripts/testPath3Launch.ts",
     "migrate-transactions": "tsx scripts/migrate-transactions.ts"
   },
   "keywords": [

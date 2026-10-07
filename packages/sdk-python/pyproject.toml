@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agenticpay"
+version = "1.0.0"
+description = "Official Python SDK for AgenticPay - Institutional Financial Firewall for AI Agents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "AgenticPay Team", email = "dev@agenticpay.ai" }]
+dependencies = [
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0"
+]
+
+[project.optional-dependencies]
+langchain = ["langchain-core>=0.1.0"]
+crewai = ["crewai>=0.28.0"]
+all = ["langchain-core>=0.1.0", "crewai>=0.28.0"]

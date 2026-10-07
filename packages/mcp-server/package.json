@@ -1,0 +1,32 @@
+{
+  "name": "@agenticpay/mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) Server for AgenticPay - Autonomous AI Financial Firewall",
+  "main": "dist/index.js",
+  "bin": {
+    "agenticpay-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "agenticpay",
+    "ai-agents",
+    "claude-desktop",
+    "cursor"
+  ],
+  "author": "AgenticPay",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

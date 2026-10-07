@@ -8,6 +8,7 @@ import {
 
 export * from './types';
 export * from './langchain';
+export * from './llamaindex';
 
 export class AgenticPayClient {
   public readonly apiKey: string;
@@ -48,13 +49,13 @@ export class AgenticPayClient {
   }
 
   /**
-   * Agent management and policy controls
+   * Policy Firewall & Budget Governance
    */
-  public readonly agents = {
+  public readonly policies = {
     /**
      * Fetch active budget limits and current spend for an agent
      */
-    getPolicy: async (agentId: string): Promise<AgentPolicy> => {
+    get: async (agentId: string): Promise<AgentPolicy> => {
       const data = await this.request<{ success: boolean; policy: AgentPolicy }>(
         `/api/v1/agents/${encodeURIComponent(agentId)}/policy`
       );
@@ -64,7 +65,7 @@ export class AgenticPayClient {
     /**
      * Update dynamic policy limits for an agent
      */
-    updatePolicy: async (
+    update: async (
       agentId: string,
       updates: {
         single_tx_cap_usdc?: number;
@@ -85,13 +86,29 @@ export class AgenticPayClient {
   };
 
   /**
+   * Agent management and policy controls (Backward compatibility)
+   */
+  public readonly agents = {
+    getPolicy: (agentId: string) => this.policies.get(agentId),
+    updatePolicy: (
+      agentId: string,
+      updates: {
+        single_tx_cap_usdc?: number;
+        daily_spend_cap_usdc?: number;
+        whitelisted_addresses?: string[];
+        active?: boolean;
+      }
+    ) => this.policies.update(agentId, updates),
+  };
+
+  /**
    * Programmatic transfers with policy firewall verification
    */
   public readonly transfers = {
     /**
      * Execute a policy-verified USDC transfer on Base Sepolia
      */
-    create: async (params: CreateTransferParams): Promise<TransferResult> => {
+    create: async (params: CreateTransferParams & { chain?: string }): Promise<TransferResult> => {
       const url = `${this.baseUrl}/api/v1/payments/transfer`;
       const res = await fetch(url, {
         method: 'POST',
@@ -105,6 +122,7 @@ export class AgenticPayClient {
           recipient: params.recipient,
           destinationAddress: params.recipient,
           amount: params.amount,
+          chain: params.chain || 'base-sepolia',
           reason: params.reason,
         }),
       });
@@ -130,9 +148,22 @@ export class AgenticPayClient {
         state: tx.state || 'INITIATED',
         amount: tx.amount || params.amount,
         destinationAddress: tx.destinationAddress || params.recipient,
-        blockchain: tx.blockchain || 'base-sepolia',
+        blockchain: tx.blockchain || params.chain || 'base-sepolia',
         recordId: data.recordId || tx.dbRecordId,
       };
+    },
+  };
+
+  /**
+   * Double-Entry Financial Ledger
+   */
+  public readonly ledger = {
+    getLogs: async (params?: { agentId?: string }): Promise<any[]> => {
+      const query = params?.agentId ? `?agentId=${encodeURIComponent(params.agentId)}` : '';
+      const data = await this.request<{ success: boolean; count: number; logs: any[] }>(
+        `/api/v1/ledger/logs${query}`
+      );
+      return data.logs || [];
     },
   };
 
@@ -161,16 +192,25 @@ export class AgenticPayClient {
      */
     issue: async (params: {
       agentId: string;
-      spendingLimitUsd: number;
+      limitUsdc?: number;
+      spendingLimitUsd?: number;
+      merchantCategory?: string;
       memo?: string;
       allowedMcc?: string[];
       ttlMinutes?: number;
     }): Promise<any> => {
+      const spendingLimit = params.limitUsdc ?? params.spendingLimitUsd ?? 50;
       const data = await this.request<{ success: boolean; card: any }>(
         '/api/v1/cards/issue',
         {
           method: 'POST',
-          body: JSON.stringify(params),
+          body: JSON.stringify({
+            agentId: params.agentId,
+            spendingLimitUsd: spendingLimit,
+            memo: params.memo || (params.merchantCategory ? `Card for ${params.merchantCategory}` : undefined),
+            allowedMcc: params.allowedMcc,
+            ttlMinutes: params.ttlMinutes,
+          }),
         }
       );
       return data.card;

@@ -1,0 +1,36 @@
+{
+  "name": "@agenticpay/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript SDK for AgenticPay - Programmable Financial Firewall for AI Agents",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "agenticpay",
+    "ai-agents",
+    "langchain",
+    "llamaindex",
+    "web3",
+    "payments",
+    "circle",
+    "fintech"
+  ],
+  "author": "AgenticPay",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/core": "^1.2.16",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

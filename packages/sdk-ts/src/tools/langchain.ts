@@ -1,12 +1,12 @@
 import { StructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { AgenticPayClient } from './index';
+import { AgenticPayClient } from '../client';
 
 export interface AgenticPayToolOptions {
   agentId?: string;
 }
 
-export class AgenticPayTool extends StructuredTool {
+export class AgenticPayLangChainTool extends StructuredTool {
   name = 'agentic_pay_transfer';
   description =
     'Allows an AI agent to send USDC payments on Base Sepolia. Automatically checks and enforces spending policies before sending.';
@@ -28,12 +28,6 @@ export class AgenticPayTool extends StructuredTool {
   private client: AgenticPayClient;
   private agentId: string;
 
-  /**
-   * Initialize AgenticPay LangChain tool
-   * Supports either:
-   *  - new AgenticPayTool(client, { agentId: 'AutoPay-Agent-01' })
-   *  - new AgenticPayTool({ client, agentId: 'AutoPay-Agent-01' })
-   */
   constructor(
     clientOrConfig: AgenticPayClient | { client: AgenticPayClient; agentId?: string },
     options?: AgenticPayToolOptions
@@ -47,13 +41,10 @@ export class AgenticPayTool extends StructuredTool {
       this.client = clientOrConfig;
       this.agentId = options?.agentId || 'AutoPay-Agent-01';
     } else {
-      throw new Error('AgenticPayTool requires a valid AgenticPayClient instance.');
+      throw new Error('AgenticPayLangChainTool requires a valid AgenticPayClient instance.');
     }
   }
 
-  /**
-   * Internal execution handler called by LangChain agents
-   */
   async _call(input: { amount: number; recipient: string; reason: string }): Promise<string> {
     const { amount, recipient, reason } = input;
 
@@ -82,13 +73,12 @@ export class AgenticPayTool extends StructuredTool {
     }
   }
 
-  /**
-   * Explicit call method for direct script invocations
-   */
   async call(input: { amount: number; recipient: string; reason: string }): Promise<string> {
     return this._call(input);
   }
 }
 
-export const AgenticPayLangChainTool = AgenticPayTool;
-
+/**
+ * Backward compatibility alias
+ */
+export const AgenticPayTool = AgenticPayLangChainTool;

@@ -4,11 +4,16 @@ import { supabase } from '../lib/supabase.js';
 import { policyEngine } from '../services/policyEngine';
 import { apiKeyService } from '../services/apiKeyService';
 import { validateTransferPayload } from '../middleware/validate';
+import { transferRateLimiter } from '../middleware/rateLimiter';
 import { webhookService } from '../services/webhookService';
 import { cardService } from '../services/cardService';
 import { anomalyEngine } from '../services/anomalyEngine';
 import { approvalService } from '../services/approvalService';
 import { hierarchyService } from '../services/hierarchyService';
+import { ledgerService } from '../services/ledgerService';
+import { complianceService } from '../services/complianceService';
+import { circuitBreaker, circuitBreakerMiddleware } from '../services/circuitBreaker';
+import { kmsService } from '../services/kmsService';
 import { requireRole, registerMember } from '../middleware/rbac';
 
 const router = Router();
@@ -18,7 +23,7 @@ const router = Router();
  * Transfers USDC on Base Sepolia from a developer-controlled wallet
  * and logs the transaction record to Supabase.
  */
-router.post('/transfer', validateTransferPayload, requireRole(['ADMIN', 'DEVELOPER']), async (req: Request, res: Response): Promise<void> => {
+router.post('/transfer', circuitBreakerMiddleware, transferRateLimiter, validateTransferPayload, requireRole(['ADMIN', 'DEVELOPER']), async (req: Request, res: Response): Promise<void> => {
   try {
     const rawWalletId = req.body.walletId || req.body.agentId;
     let walletId = rawWalletId;
@@ -239,10 +244,37 @@ router.post('/transfer', validateTransferPayload, requireRole(['ADMIN', 'DEVELOP
       console.warn('[paymentRoutes] Failed to record transaction in Supabase:', insertError.message);
     }
 
+    // Cryptographic KMS transaction payload signature
+    const kmsSignature = await kmsService.signTransferPayload({
+      transactionId: transferResult.transactionId,
+      agentId: effectiveAgentId,
+      amount: parsedAmount,
+      recipient: destinationAddress,
+      dbRecordId,
+    });
+
+    // Record circuit breaker success & SOC2/PCI-DSS compliance audit log
+    circuitBreaker.recordOutcome(true, undefined, callerOrgId);
+    await complianceService.recordAuditEntry({
+      txId: transferResult.transactionId,
+      agentId: effectiveAgentId,
+      promptOrIntent: req.body.reason || req.body.prompt || 'Agentic USDC transfer',
+      policySnapshot: policyResult.policy,
+      signatureVerdict: 'APPROVED',
+      ledgerEntryId: dbRecordId || transferResult.transactionId,
+      tenantOrgId: callerOrgId,
+      riskScore: anomalyScore?.score ?? 0,
+    });
+
     res.status(200).json({
       success: true,
       message: 'USDC transfer successfully initiated on Base Sepolia.',
       recordId: dbRecordId,
+      kmsSignature: {
+        keyId: kmsSignature.keyId,
+        version: kmsSignature.version,
+        algorithm: kmsSignature.algorithm,
+      },
       transaction: {
         ...transferResult,
         dbRecordId,
@@ -250,6 +282,7 @@ router.post('/transfer', validateTransferPayload, requireRole(['ADMIN', 'DEVELOP
     });
   } catch (error: any) {
     console.error('[paymentRoutes] Error processing transfer:', error);
+    circuitBreaker.recordOutcome(false, error.message, (req as any).orgId);
     res.status(500).json({
       success: false,
       error: 'Internal Server Error',
@@ -536,6 +569,51 @@ router.get('/audit-logs', requireRole(['ADMIN', 'DEVELOPER', 'AUDITOR']), async 
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve audit logs',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/v1/ledger/logs
+ * Retrieve double-entry journal entries, optionally filtered by agentId
+ */
+router.get('/ledger/logs', requireRole(['ADMIN', 'DEVELOPER', 'AUDITOR']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const agentFilter = typeof req.query.agentId === 'string' ? req.query.agentId.trim() : undefined;
+    const logs = await ledgerService.getLogs(agentFilter);
+    res.json({
+      success: true,
+      count: logs.length,
+      logs,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve ledger logs',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * GET /api/v1/ledger
+ * Retrieve double-entry ledger balance summary, zero-drift verification & entries
+ */
+router.get('/ledger', requireRole(['ADMIN', 'DEVELOPER', 'AUDITOR']), async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const sanity = await ledgerService.verifyLedgerSanity();
+    const logs = await ledgerService.getLogs();
+    res.json({
+      success: true,
+      sanity,
+      count: logs.length,
+      logs,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve ledger',
       message: error.message,
     });
   }
@@ -836,6 +914,102 @@ router.post('/organization/members', requireRole(['ADMIN']), async (req: Request
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+/**
+ * GET /api/v1/compliance/export
+ * Exports SOC2 Type II & PCI-DSS audit report formatted in JSON or CSV
+ */
+router.get('/compliance/export', requireRole(['ADMIN', 'AUDITOR']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const format = (req.query.format as string) === 'csv' ? 'csv' : 'json';
+    const agentId = typeof req.query.agentId === 'string' ? req.query.agentId : undefined;
+    const limit = Number(req.query.limit) || 100;
+
+    const report = await complianceService.exportAuditReport(format, { agentId, limit });
+
+    if (format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="agenticpay-compliance-audit.csv"');
+      res.send(report);
+    } else {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(report);
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/tenant/freeze
+ * Emergency panic switch: Quarantines tenant account and halts all autonomous agent payments
+ */
+router.post('/tenant/freeze', requireRole(['ADMIN']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { tenantOrgId, reason } = req.body;
+    const targetOrgId = tenantOrgId || (req as any).orgId || '00000000-0000-0000-0000-000000000001';
+
+    circuitBreaker.freezeTenant(targetOrgId);
+    console.warn(`[CircuitBreaker] 🚨 Tenant ${targetOrgId} frozen. Reason: ${reason || 'Manual Admin Trigger'}`);
+
+    res.json({
+      success: true,
+      quarantined: true,
+      tenantOrgId: targetOrgId,
+      message: `Tenant account ${targetOrgId} has been placed in emergency freeze. All agent transfers halted.`,
+      reason: reason || 'Manual Admin Trigger',
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/v1/tenant/unfreeze
+ * Restores agent execution post-incident analysis
+ */
+router.post('/tenant/unfreeze', requireRole(['ADMIN']), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { tenantOrgId } = req.body;
+    const targetOrgId = tenantOrgId || (req as any).orgId || '00000000-0000-0000-0000-000000000001';
+
+    circuitBreaker.unfreezeTenant(targetOrgId);
+    console.log(`[CircuitBreaker] 🟢 Tenant ${targetOrgId} un-frozen and restored.`);
+
+    res.json({
+      success: true,
+      quarantined: false,
+      tenantOrgId: targetOrgId,
+      message: `Tenant account ${targetOrgId} has been unfrozen. Agent execution restored.`,
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/v1/circuit-breaker/status
+ * Query circuit breaker health, rolling failure metrics, and quarantined tenants
+ */
+router.get('/circuit-breaker/status', async (_req: Request, res: Response): Promise<void> => {
+  res.json({
+    success: true,
+    circuitBreaker: circuitBreaker.getStatus(),
+  });
+});
+
+/**
+ * POST /api/v1/circuit-breaker/reset
+ * Admin manual reset of tripped circuit breaker
+ */
+router.post('/circuit-breaker/reset', requireRole(['ADMIN']), async (_req: Request, res: Response): Promise<void> => {
+  circuitBreaker.resetGlobalCircuit();
+  res.json({
+    success: true,
+    message: 'Global circuit breaker reset to HEALTHY.',
+    status: circuitBreaker.getStatus(),
+  });
 });
 
 export default router;

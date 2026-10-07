@@ -26,7 +26,11 @@
     "test:day15": "npm run test:day15 --prefix backend",
     "test:day16": "npm run test:day16 --prefix backend",
     "test:day18": "npm run test:day18 --prefix backend",
-    "test:master": "npm run test:master --prefix backend"
+    "test:master": "npm run test:master --prefix backend",
+    "test:load": "npm run test:load --prefix backend",
+    "test:path1": "npm run test:path1 --prefix backend",
+    "test:path2": "npm run test:path2 --prefix backend",
+    "test:path3": "npm run test:path3 --prefix backend"
   },
   "keywords": [
     "agentic-payments",

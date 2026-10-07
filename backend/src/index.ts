@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import healthRouter from './routes/health';
 import agentsRouter from './routes/agents';
 import walletsRouter from './routes/wallets';
@@ -38,6 +40,36 @@ app.use(express.text({ type: ['text/plain', 'application/json'] }));
 // Public health check route
 app.use('/health', healthRouter);
 app.use('/api/health', healthRouter);
+
+// Serve OpenAPI Specification
+app.get('/openapi.yaml', (_req: Request, res: Response) => {
+  const openApiPath = path.resolve(__dirname, '../../docs/openapi.yaml');
+  if (fs.existsSync(openApiPath)) {
+    res.setHeader('Content-Type', 'text/yaml');
+    res.sendFile(openApiPath);
+  } else {
+    res.status(404).send('OpenAPI specification not found');
+  }
+});
+
+// Interactive Swagger & Redoc Documentation Portal
+app.get(['/docs', '/api-docs'], (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html>
+  <head>
+    <title>AgenticPay API Reference & Developer Portal</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; }</style>
+  </head>
+  <body>
+    <redoc spec-url="/openapi.yaml"></redoc>
+    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+  </body>
+</html>`);
+});
 
 // Prometheus Observability metrics route
 app.use('/metrics', metricsRouter);

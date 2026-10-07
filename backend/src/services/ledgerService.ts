@@ -151,4 +151,17 @@ export const ledgerService = {
       entriesCount: memoryJournalEntries.length,
     };
   },
+
+  /**
+   * Retrieve double-entry ledger journal entries, optionally filtered by agentId
+   */
+  async getLogs(agentId?: string): Promise<JournalEntry[]> {
+    if (!agentId) {
+      return [...memoryJournalEntries];
+    }
+    const needle = agentId.trim().toLowerCase();
+    return memoryJournalEntries.filter((entry) =>
+      entry.lines.some((line) => line.accountCode.toLowerCase().includes(needle))
+    );
+  },
 };
