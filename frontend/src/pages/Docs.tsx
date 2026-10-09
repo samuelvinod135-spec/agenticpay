@@ -2,24 +2,20 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import AppLayout from '@/components/AppLayout';
 import {
   Code,
   Terminal,
   Play,
-  Shield,
-  Layers,
-  FileText,
   Copy,
   Check,
-  Zap,
-  CreditCard,
-  Key,
+  FileText,
   ExternalLink,
-  ChevronRight,
-  Server,
-  Activity,
+  Key,
+  Layers,
   ArrowRight,
-  Search
+  Shield,
+  Zap,
 } from 'lucide-react';
 
 interface EndpointSpec {
@@ -194,8 +190,7 @@ export default function Docs() {
     setSandboxResponse(null);
     setSandboxStatus(null);
 
-    // Simulate real gateway latency & execution
-    await new Promise((r) => setTimeout(r, 650));
+    await new Promise((r) => setTimeout(r, 600));
 
     if (selectedEndpoint.path.includes('/transfer')) {
       setSandboxStatus(200);
@@ -258,84 +253,65 @@ export default function Docs() {
   const tags = ['All', 'Payments', 'Firewall', 'Virtual Cards', 'Compliance', 'Circuit Breaker'];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30">
-      {/* Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-emerald-500/20">
-                ⚡
-              </div>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                AgenticPay
+    <AppLayout>
+      <div className="py-8 px-4 sm:px-6 lg:px-8 space-y-8">
+        {/* Top Banner & Tab Controls */}
+        <div className="p-6 rounded-2xl bg-[#0D111A] border border-[#1E293B] shadow-glass flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-bold font-mono text-white tracking-tight">
+                Developer Portal & Interactive Sandbox
+              </h1>
+              <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                OpenAPI 3.1
               </span>
-            </Link>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-              v1.0.0 OpenAPI 3.1
-            </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+              Simulate policy-governed micro-transfers, dynamic virtual cards, and cryptographic audit logs directly from the browser with zero risk.
+            </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-xs">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* View Switcher Tabs */}
+            <div className="flex items-center gap-1 bg-[#07090E] border border-[#1E293B] rounded-xl p-1 text-xs font-mono">
               <button
                 onClick={() => setActiveTab('sandbox')}
-                className={`px-3 py-1.5 rounded-md font-medium transition ${
-                  activeTab === 'sandbox' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeTab === 'sandbox'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Interactive Sandbox
+                Sandbox
               </button>
               <button
                 onClick={() => setActiveTab('openapi')}
-                className={`px-3 py-1.5 rounded-md font-medium transition ${
-                  activeTab === 'openapi' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeTab === 'openapi'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 OpenAPI Spec
               </button>
               <button
                 onClick={() => setActiveTab('sdks')}
-                className={`px-3 py-1.5 rounded-md font-medium transition ${
-                  activeTab === 'sdks' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  activeTab === 'sdks'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 SDKs & Tools
               </button>
             </div>
 
-            <Link
-              href="/dashboard"
-              className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 transition font-medium flex items-center gap-1.5"
-            >
-              Dashboard <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content Layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Banner */}
-        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-cyan-950/40 border border-emerald-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-              <span>Developer Portal & Interactive Sandbox</span>
-              <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                Live Simulator
-              </span>
-            </h1>
-            <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Simulate policy-governed micro-transfers, dynamic virtual cards, and cryptographic audit logs directly from the browser with zero risk.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
+            {/* External Links */}
             <a
               href="http://localhost:4000/docs"
               target="_blank"
               rel="noreferrer"
-              className="text-xs px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium border border-slate-700 flex items-center gap-1.5 transition"
+              className="text-xs font-mono px-3 py-2 rounded-xl bg-[#07090E] hover:bg-[#151C2C] text-slate-300 hover:text-white border border-[#1E293B] flex items-center gap-1.5 transition"
             >
               <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
               Full Redoc View
@@ -343,7 +319,7 @@ export default function Docs() {
             <a
               href="http://localhost:4000/openapi.yaml"
               download="openapi.yaml"
-              className="text-xs px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 font-medium border border-emerald-500/30 flex items-center gap-1.5 transition"
+              className="text-xs font-mono px-3 py-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800/40 flex items-center gap-1.5 transition"
             >
               <FileText className="w-3.5 h-3.5" />
               Download YAML
@@ -351,19 +327,21 @@ export default function Docs() {
           </div>
         </div>
 
+        {/* Tab 1: Interactive Sandbox */}
         {activeTab === 'sandbox' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Sidebar Endpoint List */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Sidebar: Endpoints List (4 cols) */}
             <div className="lg:col-span-4 space-y-4">
+              {/* Tag filters */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 {tags.map((t) => (
                   <button
                     key={t}
                     onClick={() => setFilterTag(t)}
-                    className={`text-xs px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition ${
+                    className={`text-xs px-2.5 py-1 rounded-lg font-mono whitespace-nowrap transition ${
                       filterTag === t
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                        : 'bg-[#0D111A] border border-[#1E293B] text-slate-400 hover:text-white hover:bg-[#151C2C]'
                     }`}
                   >
                     {t}
@@ -371,6 +349,7 @@ export default function Docs() {
                 ))}
               </div>
 
+              {/* Endpoints */}
               <div className="space-y-2">
                 {filteredEndpoints.map((ep) => {
                   const isSelected = selectedEndpoint.path === ep.path && selectedEndpoint.method === ep.method;
@@ -382,10 +361,10 @@ export default function Docs() {
                         setSandboxResponse(null);
                         setSandboxStatus(null);
                       }}
-                      className={`w-full text-left p-3.5 rounded-xl border transition ${
+                      className={`w-full text-left p-3.5 rounded-xl border transition-all ${
                         isSelected
-                          ? 'bg-slate-900/90 border-emerald-500/40 shadow-lg shadow-emerald-500/5'
-                          : 'bg-slate-900/40 border-slate-800/80 hover:bg-slate-900 hover:border-slate-700'
+                          ? 'bg-[#151C2C] border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                          : 'bg-[#0D111A]/80 border-[#1E293B] hover:bg-[#151C2C]/50 hover:border-slate-700'
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -395,7 +374,7 @@ export default function Docs() {
                               ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                               : ep.method === 'GET'
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                           }`}
                         >
                           {ep.method}
@@ -404,7 +383,7 @@ export default function Docs() {
                           {ep.path}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-1 font-medium truncate">
+                      <p className="text-xs text-slate-400 mt-1 font-sans line-clamp-1">
                         {ep.title}
                       </p>
                     </button>
@@ -413,79 +392,79 @@ export default function Docs() {
               </div>
             </div>
 
-            {/* Sandbox Console Playground */}
+            {/* Right Panel: Sandbox Console Playground (8 cols) */}
             <div className="lg:col-span-8 space-y-6">
-              {/* Endpoint Card */}
-              <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-                  <div className="flex items-center gap-2.5">
+              {/* Endpoint Details Card */}
+              <div className="p-6 rounded-2xl bg-[#0D111A] border border-[#1E293B] shadow-glass space-y-5">
+                <div className="flex flex-wrap items-center justify-between pb-4 border-b border-[#1E293B] gap-3">
+                  <div className="flex items-center gap-3">
                     <span
                       className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md ${
                         selectedEndpoint.method === 'POST'
                           ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                           : selectedEndpoint.method === 'GET'
                           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                       }`}
                     >
                       {selectedEndpoint.method}
                     </span>
-                    <span className="font-mono text-sm text-white font-semibold">
+                    <span className="font-mono text-sm sm:text-base text-white font-semibold">
                       {selectedEndpoint.path}
                     </span>
                   </div>
 
-                  <span className="text-xs font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                  <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-[#07090E] border border-[#1E293B] text-slate-400">
                     {selectedEndpoint.tag}
                   </span>
                 </div>
 
-                <p className="text-sm text-slate-300 mt-4 leading-relaxed">
+                <p className="text-sm text-slate-300 leading-relaxed font-sans">
                   {selectedEndpoint.description}
                 </p>
 
-                {/* Pre-configured Token pill */}
-                <div className="mt-4 p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between gap-2">
+                {/* Sandbox Token Pill */}
+                <div className="p-3 rounded-xl bg-[#07090E] border border-[#1E293B] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <Key className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-xs text-slate-400 shrink-0 font-medium">Sandbox Token:</span>
+                    <Key className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span className="text-xs text-slate-400 shrink-0 font-mono">Sandbox Token:</span>
                     <span className="text-xs font-mono text-slate-300 truncate">{mockToken}</span>
                   </div>
                   <button
                     onClick={() => handleCopy(mockToken)}
-                    className="text-xs px-2 py-1 rounded bg-slate-800 text-slate-300 hover:text-white shrink-0 flex items-center gap-1"
+                    className="text-xs font-mono px-2.5 py-1 rounded-lg bg-[#0D111A] text-slate-300 hover:text-white hover:bg-[#151C2C] border border-[#1E293B] shrink-0 flex items-center gap-1 transition"
                   >
-                    {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    {copied ? <Check className="w-3 h-3 text-cyan-400" /> : <Copy className="w-3 h-3" />}
                     Copy
                   </button>
                 </div>
 
-                {/* Request Payload Body / Params */}
-                <div className="mt-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {/* Request Simulation Parameters */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">
                       Request Simulation Parameters
                     </label>
                     <span className="text-[11px] text-slate-500 font-mono">application/json</span>
                   </div>
 
-                  <div className="rounded-xl bg-slate-950 border border-slate-800 p-4 font-mono text-xs text-slate-300">
-                    <pre className="overflow-x-auto">
+                  <div className="rounded-xl bg-[#07090E] border border-[#1E293B] p-4 font-mono text-xs text-cyan-300/90 overflow-x-auto">
+                    <pre>
                       {JSON.stringify(selectedEndpoint.defaultPayload || {}, null, 2)}
                     </pre>
                   </div>
                 </div>
 
                 {/* Simulation Action Bar */}
-                <div className="mt-6 flex items-center justify-end gap-3">
+                <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     onClick={handleExecuteSimulation}
                     disabled={isSimulating}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition disabled:opacity-50"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-mono font-bold text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-all disabled:opacity-50"
                   >
                     {isSimulating ? (
                       <>
-                        <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         Simulating Firewall...
                       </>
                     ) : (
@@ -498,10 +477,10 @@ export default function Docs() {
                 </div>
               </div>
 
-              {/* Response Inspector */}
-              <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              {/* Response Inspector Card */}
+              <div className="p-6 rounded-2xl bg-[#0D111A] border border-[#1E293B] shadow-glass space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#1E293B]">
+                  <span className="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                     <Terminal className="w-3.5 h-3.5 text-cyan-400" />
                     Response Inspector
                   </span>
@@ -511,7 +490,7 @@ export default function Docs() {
                       className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
                         sandboxStatus >= 200 && sandboxStatus < 300
                           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                       }`}
                     >
                       HTTP {sandboxStatus} OK
@@ -519,7 +498,7 @@ export default function Docs() {
                   )}
                 </div>
 
-                <div className="mt-4 rounded-xl bg-slate-950 border border-slate-800 p-4 font-mono text-xs text-emerald-400 max-h-80 overflow-y-auto">
+                <div className="rounded-xl bg-[#07090E] border border-[#1E293B] p-4 font-mono text-xs text-emerald-400 max-h-80 overflow-y-auto">
                   <pre className="overflow-x-auto">
                     {sandboxResponse || selectedEndpoint.responseSnippet}
                   </pre>
@@ -529,23 +508,24 @@ export default function Docs() {
           </div>
         )}
 
+        {/* Tab 2: OpenAPI Spec View */}
         {activeTab === 'openapi' && (
-          <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4">
+          <div className="p-6 rounded-2xl bg-[#0D111A] border border-[#1E293B] shadow-glass space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-bold text-white">OpenAPI 3.1 Specification</h2>
+                <h2 className="text-lg font-bold font-mono text-white">OpenAPI 3.1 Specification</h2>
                 <p className="text-xs text-slate-400 mt-0.5">Machine-readable contract covering Days 1–20 and Paths 1–2</p>
               </div>
               <button
                 onClick={() => handleCopy('http://localhost:4000/openapi.yaml')}
-                className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium border border-slate-700 flex items-center gap-1.5"
+                className="text-xs font-mono px-3 py-1.5 rounded-lg bg-[#07090E] hover:bg-[#151C2C] text-white border border-[#1E293B] flex items-center gap-1.5 transition"
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-cyan-400" /> : <Copy className="w-3.5 h-3.5" />}
                 Copy Spec URL
               </button>
             </div>
 
-            <div className="rounded-xl bg-slate-950 border border-slate-800 p-4 font-mono text-xs text-slate-300 max-h-[600px] overflow-y-auto">
+            <div className="rounded-xl bg-[#07090E] border border-[#1E293B] p-4 font-mono text-xs text-slate-300 max-h-[600px] overflow-y-auto">
               <pre className="overflow-x-auto">
 {`openapi: 3.1.0
 info:
@@ -588,21 +568,22 @@ paths:
           </div>
         )}
 
+        {/* Tab 3: SDKs & Tools View */}
         {activeTab === 'sdks' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* TypeScript SDK */}
-            <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4">
+            <div className="p-6 rounded-2xl bg-[#0D111A] border border-[#1E293B] shadow-glass space-y-4">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white flex items-center gap-2">
+                <span className="font-mono font-bold text-white flex items-center gap-2">
                   <Code className="w-4 h-4 text-cyan-400" />
                   TypeScript SDK (@agenticpay/sdk)
                 </span>
-                <span className="text-xs font-mono text-slate-400">npm</span>
+                <span className="text-xs font-mono text-slate-400 px-2 py-0.5 rounded bg-[#07090E] border border-[#1E293B]">npm</span>
               </div>
-              <div className="rounded-xl bg-slate-950 p-3 font-mono text-xs text-emerald-400 border border-slate-800">
+              <div className="rounded-xl bg-[#07090E] p-3 font-mono text-xs text-cyan-400 border border-[#1E293B]">
                 npm install @agenticpay/sdk
               </div>
-              <div className="rounded-xl bg-slate-950 p-4 font-mono text-xs text-slate-300 border border-slate-800 overflow-x-auto">
+              <div className="rounded-xl bg-[#07090E] p-4 font-mono text-xs text-slate-300 border border-[#1E293B] overflow-x-auto">
                 <pre>{`import { AgenticPayClient, AgenticPayLangChainTool } from '@agenticpay/sdk';
 
 const client = new AgenticPayClient({ apiKey: 'ag_live_...' });
@@ -611,18 +592,18 @@ const tool = new AgenticPayLangChainTool(client, { agentId: 'AutoPay-01' });`}</
             </div>
 
             {/* Python SDK */}
-            <div className="p-6 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-4">
+            <div className="p-6 rounded-2xl bg-[#0D111A] border border-[#1E293B] shadow-glass space-y-4">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-emerald-400" />
+                <span className="font-mono font-bold text-white flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-purple-400" />
                   Python SDK (agenticpay)
                 </span>
-                <span className="text-xs font-mono text-slate-400">pip</span>
+                <span className="text-xs font-mono text-slate-400 px-2 py-0.5 rounded bg-[#07090E] border border-[#1E293B]">pip</span>
               </div>
-              <div className="rounded-xl bg-slate-950 p-3 font-mono text-xs text-emerald-400 border border-slate-800">
+              <div className="rounded-xl bg-[#07090E] p-3 font-mono text-xs text-purple-300 border border-[#1E293B]">
                 pip install agenticpay[all]
               </div>
-              <div className="rounded-xl bg-slate-950 p-4 font-mono text-xs text-slate-300 border border-slate-800 overflow-x-auto">
+              <div className="rounded-xl bg-[#07090E] p-4 font-mono text-xs text-slate-300 border border-[#1E293B] overflow-x-auto">
                 <pre>{`from agenticpay import AgenticPayClient
 from agenticpay.tools import AgenticPayCrewTool
 
@@ -633,6 +614,6 @@ crew_tool = AgenticPayCrewTool(client=client)`}</pre>
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

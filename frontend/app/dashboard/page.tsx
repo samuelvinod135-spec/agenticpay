@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 import { createClient } from '@/lib/supabase/client';
 import {
   Bot,
@@ -96,6 +97,11 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Modal / Form state for new agent
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -596,70 +602,12 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20 text-slate-100 font-sans selection:bg-cyan-500/30">
-      {/* Top Navbar */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl border-b border-white/10 bg-[#090D16]/85">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-cyan-500 to-teal-400 p-[1.5px] shadow-glow-cyan transition-transform group-hover:scale-105">
-                <div className="w-full h-full bg-[#090D16] rounded-[10px] flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-cyan-400" />
-                </div>
-              </div>
-              <span className="font-bold text-base tracking-tight text-white">
-                agentic<span className="text-cyan-400">pay</span>
-              </span>
-            </Link>
+    <div className="min-h-screen pb-20 text-[#F3F0FF] bg-[#07090E] font-sans selection:bg-cyan-500/30">
+      {/* Top Background Radial Atmosphere */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[420px] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(139,92,246,0.22),rgba(7,9,14,0))] blur-2xl pointer-events-none -z-10" />
 
-            <span className="hidden sm:inline-flex items-center gap-1.5 ml-4 px-3 py-1 rounded-full text-[11px] font-mono bg-blue-950/60 text-blue-300 border border-blue-800/40">
-              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-              Base Sepolia (Chain ID 84532)
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3 sm:gap-4">
-            {/* Live Sync Badge & Auto-Refresh Toggle */}
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all border ${
-                autoRefresh
-                  ? 'bg-emerald-950/50 text-emerald-300 border-emerald-800/50 hover:bg-emerald-900/50'
-                  : 'bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-800'
-              }`}
-              title={autoRefresh ? 'Live Sync Active (Auto-refresh every 4s)' : 'Live Sync Paused'}
-            >
-              <Radio className={`w-3.5 h-3.5 ${autoRefresh ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
-              <span className="hidden md:inline">{autoRefresh ? 'LIVE SYNC' : 'PAUSED'}</span>
-            </button>
-
-            {/* Manual Refresh Button */}
-            <button
-              id="dashboard-refresh-btn"
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-              className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 border border-white/5 transition-all disabled:opacity-50"
-              title="Refresh ledger and policies"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-cyan-400' : ''}`} />
-            </button>
-
-            {/* User Session Info */}
-            <div className="hidden lg:flex flex-col text-right">
-              <span className="text-xs font-medium text-slate-200">{userEmail}</span>
-              <span className="text-[10px] text-slate-400 font-mono">Supabase Auth • Operator</span>
-            </div>
-
-            <button
-              id="dashboard-signout-btn"
-              onClick={handleSignOut}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:bg-rose-950/40 border border-rose-900/30 transition-all"
-            >
-              <LogOut className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Sign Out</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Unified Top Navbar */}
+      <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 pt-8 space-y-8">
         {/* Banner: System Status & Webhook Listener */}
@@ -687,7 +635,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-2 border-b border-white/10 pb-3 overflow-x-auto">
+        <div className="flex items-center gap-2 border-b border-[#1E293B] pb-3 overflow-x-auto scrollbar-none">
           {[
             { id: 'overview', label: 'Overview & Ledger', icon: Activity },
             { id: 'policies', label: 'Agents & Policy Sliders', icon: Sliders },
@@ -702,13 +650,13 @@ export default function DashboardPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-mono text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl font-mono text-xs font-semibold transition-all whitespace-nowrap ${
                   isActive
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
+                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-white hover:bg-[#151C2C] border border-transparent'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-cyan-400' : 'text-slate-500'}`} />
                 {tab.label}
               </button>
             );
@@ -980,13 +928,17 @@ export default function DashboardPage() {
                         <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors">
                           {/* 1. Timestamp */}
                           <td className="px-5 py-3.5 whitespace-nowrap text-slate-400">
-                            {new Date(tx.created_at).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                            })}{' '}
-                            <span className="text-[10px] text-slate-600 block">
-                              {new Date(tx.created_at).toLocaleDateString()}
+                            {isMounted && tx.created_at
+                              ? new Date(tx.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  second: '2-digit',
+                                })
+                              : (tx.created_at ? tx.created_at.slice(11, 19) : '--:--:--')}{' '}
+                            <span className="text-[10px] text-slate-500 block">
+                              {isMounted && tx.created_at
+                                ? new Date(tx.created_at).toLocaleDateString()
+                                : (tx.created_at ? tx.created_at.slice(0, 10) : '----/--/--')}
                             </span>
                           </td>
 
@@ -1439,7 +1391,9 @@ export default function DashboardPage() {
                       auditLogs.map((log, idx) => (
                         <tr key={idx} className="hover:bg-white/[0.02]">
                           <td className="px-5 py-3 text-slate-400 whitespace-nowrap">
-                            {new Date(log.created_at || Date.now()).toLocaleTimeString()}
+                            {isMounted
+                              ? new Date(log.created_at || Date.now()).toLocaleTimeString()
+                              : '--:--:--'}
                           </td>
                           <td className="px-5 py-3 text-white font-medium">{log.agent_id}</td>
                           <td className="px-5 py-3 text-slate-200">
@@ -1542,7 +1496,9 @@ export default function DashboardPage() {
                       <tr key={k.id} className="hover:bg-white/[0.02]">
                         <td className="px-5 py-3 font-semibold text-white">{k.keyName}</td>
                         <td className="px-5 py-3 text-cyan-400">{k.keyPrefix}...</td>
-                        <td className="px-5 py-3 text-slate-400">{new Date(k.createdAt).toLocaleDateString()}</td>
+                        <td className="px-5 py-3 text-slate-400">
+                          {isMounted && k.createdAt ? new Date(k.createdAt).toLocaleDateString() : '----/--/--'}
+                        </td>
                         <td className="px-5 py-3">
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ACTIVE
@@ -1607,7 +1563,7 @@ export default function DashboardPage() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-400">
                         <div>Destination: <span className="text-slate-200">{app.destinationAddress}</span></div>
-                        <div>Expires: <span className="text-rose-400">{new Date(app.expiresAt).toLocaleTimeString()}</span></div>
+                        <div>Expires: <span className="text-rose-400">{isMounted && app.expiresAt ? new Date(app.expiresAt).toLocaleTimeString() : '--:--:--'}</span></div>
                         {app.reason && <div className="sm:col-span-2 text-slate-300">Memo: {app.reason}</div>}
                       </div>
 
